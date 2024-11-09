@@ -1,0 +1,24 @@
+[package]
+name = "serde_influxlp"
+version = "0.1.0"
+description = "A Rust crate implementing Serde support for parsing and serializing InfluxDB v2 line protocol."
+edition = "2021"
+homepage = "https://github.com/sbr075/serde-influxlp"
+repository = "https://github.com/sbr075/serde-influxlp"
+readme = "README.md"
+license = "MIT OR Apache-2.0"
+keywords = ["influxdb", "line-protocol", "serde", "encoding", "decoding"]
+categories = ["encoding", "parser-implementations"]
+
+[dependencies]
+conv = "0.3.3"
+itoa = "1.0.11"
+regex = "1.11.1"
+ryu = "1.0.18"
+serde = "1.0.214"
+
+[dev-dependencies]
+serde = { version = "1.0.214", features = ["derive"] }
+
+[lib]
+doctest = false
