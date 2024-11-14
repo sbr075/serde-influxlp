@@ -18,12 +18,12 @@ use super::{
     reader::Reader,
 };
 
-struct Deserializer<'a> {
-    reader: Reader<'a>,
+struct Deserializer<'de> {
+    reader: Reader<'de>,
 }
 
-impl<'a> Deserializer<'a> {
-    fn from_reader(reader: Reader<'a>) -> Self {
+impl<'de> Deserializer<'de> {
+    fn from_reader(reader: Reader<'de>) -> Self {
         Deserializer { reader }
     }
 
@@ -34,7 +34,7 @@ impl<'a> Deserializer<'a> {
     /// Set the expected elements the reader should look for
     ///
     /// If the reader tries to read a field which is not defined it will skip it
-    fn set_elements(&mut self, fields: &'a [&'a str]) -> Result<()> {
+    fn set_elements(&mut self, fields: &'de [&'de str]) -> Result<()> {
         self.reader.set_elements(fields)
     }
 
@@ -45,7 +45,7 @@ impl<'a> Deserializer<'a> {
 
     /// Reset the reader so it is ready to parse a new line
     fn next_line(&mut self) {
-        self.reader.next_line();
+        self.reader.next_line()
     }
 
     /// Check if the current element has any key-value pairs left
@@ -94,7 +94,7 @@ macro_rules! deserialize_integer {
     };
 }
 
-impl<'de, 'a> de::Deserializer<'de> for &mut Deserializer<'de> {
+impl<'de> de::Deserializer<'de> for &mut Deserializer<'de> {
     type Error = Error;
 
     fn deserialize_any<V>(self, visitor: V) -> Result<V::Value>
@@ -252,7 +252,7 @@ impl<'de, 'a> de::Deserializer<'de> for &mut Deserializer<'de> {
     where
         V: de::Visitor<'de>,
     {
-        visitor.visit_seq(self)
+        self.deserialize_seq(visitor)
     }
 
     fn deserialize_tuple_struct<V>(
@@ -435,6 +435,10 @@ pub fn from_str<'a, T>(s: &'a str) -> Result<T>
 where
     T: Deserialize<'a>,
 {
+    if s.trim().is_empty() {
+        return Err(Error::empty_input());
+    }
+
     let reader = Reader::new(s);
     let mut deserializer = Deserializer::from_reader(reader);
     let value = T::deserialize(&mut deserializer)?;
@@ -448,9 +452,9 @@ mod test {
 
     #[derive(Debug, serde::Deserialize)]
     #[serde(rename_all = "lowercase")]
-    enum Boolean {
-        True,
-        False,
+    enum Exposure {
+        Public,
+        Private,
     }
 
     #[derive(Debug, serde::Deserialize)]
@@ -459,6 +463,8 @@ mod test {
         pub tag1: i32,
 
         pub tag2: Option<String>,
+
+        pub tag3: Exposure,
     }
 
     #[derive(Debug, serde::Deserialize)]
@@ -466,7 +472,7 @@ mod test {
     struct Fields {
         pub field1: i32,
 
-        pub field2: Boolean,
+        pub field2: bool,
     }
 
     #[derive(Debug, serde::Deserialize)]
@@ -477,12 +483,24 @@ mod test {
         pub tags: Tags,
 
         pub fields: Fields,
+
+        pub timestamp: i64,
     }
 
     #[test]
     fn test_de_from_str() {
-        let line = "measurement,tag1=123 field1=123i,field2=true";
-        let metric = from_str::<Metric>(line);
-        assert!(metric.is_ok())
+        let line = "metric1,tag1=123,tag3=private field1=321,field2=t 123456789";
+        let result = from_str::<Metric>(line);
+        assert!(result.is_ok());
+
+        let lines = r#"
+        metric1,tag1=123,tag3=public field1=321,field2=t 123456789
+        #comment line
+
+        metric2,tag1=321,tag2=hello\ world,tag3=private field1=123,field2=True 123456789
+
+        "#;
+        let result = from_str::<Vec<Metric>>(lines);
+        assert!(result.is_ok())
     }
 }

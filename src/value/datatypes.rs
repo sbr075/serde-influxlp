@@ -497,7 +497,7 @@ impl Value {
     pub fn as_string(&self) -> String {
         match self {
             Value::None => self.to_string(),
-            Value::Number(n) => n.to_string(),
+            Value::Number(n) => n.as_string(),
             Value::String(s) => s.to_string(),
             Value::Boolean(b) => b.to_string(),
         }
