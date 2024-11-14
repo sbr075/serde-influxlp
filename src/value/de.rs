@@ -23,6 +23,13 @@ impl<'de> Deserialize<'de> for Value {
                 formatter.write_str("a valid influxdb v2 line protocol data type")
             }
 
+            fn visit_unit<E>(self) -> Result<Self::Value, E>
+            where
+                E: de::Error,
+            {
+                Ok(Value::None)
+            }
+
             fn visit_f64<E>(self, n: f64) -> Result<Self::Value, E>
             where
                 E: serde::de::Error,

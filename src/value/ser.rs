@@ -12,6 +12,7 @@ impl Serialize for Value {
         S: serde::Serializer,
     {
         match self {
+            Value::None => serializer.serialize_unit(),
             Value::Float(n) => serializer.serialize_f64(*n),
             Value::Integer(n) => serializer.serialize_i64(*n),
             Value::UInteger(n) => serializer.serialize_u64(*n),
