@@ -3,8 +3,21 @@ use serde::{
     Serialize,
 };
 
-use super::datatypes::Value;
+use super::datatypes::{Number, Value};
 use crate::error::Error;
+
+impl Serialize for Number {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: ser::Serializer,
+    {
+        match *self {
+            Number::Float(n) => serializer.serialize_f64(n),
+            Number::Integer(n) => serializer.serialize_i64(n),
+            Number::UInteger(n) => serializer.serialize_u64(n),
+        }
+    }
+}
 
 impl Serialize for Value {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
@@ -13,9 +26,7 @@ impl Serialize for Value {
     {
         match self {
             Value::None => serializer.serialize_unit(),
-            Value::Float(n) => serializer.serialize_f64(*n),
-            Value::Integer(n) => serializer.serialize_i64(*n),
-            Value::UInteger(n) => serializer.serialize_u64(*n),
+            Value::Number(n) => n.serialize(serializer),
             Value::String(s) => serializer.serialize_str(s),
             Value::Boolean(b) => serializer.serialize_bool(*b),
         }
@@ -53,7 +64,7 @@ impl<'de> ser::Serializer for Serializer {
     }
 
     fn serialize_i64(self, v: i64) -> Result<Self::Ok, Self::Error> {
-        Ok(Value::Integer(v))
+        Ok(Value::Number(Number::Integer(v)))
     }
 
     fn serialize_u8(self, v: u8) -> Result<Self::Ok, Self::Error> {
@@ -69,7 +80,7 @@ impl<'de> ser::Serializer for Serializer {
     }
 
     fn serialize_u64(self, v: u64) -> Result<Self::Ok, Self::Error> {
-        Ok(Value::UInteger(v))
+        Ok(Value::Number(Number::UInteger(v)))
     }
 
     fn serialize_f32(self, v: f32) -> Result<Self::Ok, Self::Error> {
@@ -77,7 +88,7 @@ impl<'de> ser::Serializer for Serializer {
     }
 
     fn serialize_f64(self, v: f64) -> Result<Self::Ok, Self::Error> {
-        Ok(Value::Float(v))
+        Ok(Value::Number(Number::Float(v)))
     }
 
     fn serialize_char(self, v: char) -> Result<Self::Ok, Self::Error> {

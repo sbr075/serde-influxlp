@@ -7,7 +7,47 @@ use serde::{
 
 use crate::error::Error;
 
-use super::datatypes::Value;
+use super::datatypes::{Number, Value};
+
+impl<'de> Deserialize<'de> for Number {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: de::Deserializer<'de>,
+    {
+        struct NumberVisitor;
+
+        impl<'de> Visitor<'de> for NumberVisitor {
+            type Value = Number;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("a valid influxdb v2 line protocol number")
+            }
+
+            fn visit_f64<E>(self, n: f64) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                Ok(Number::Float(n))
+            }
+
+            fn visit_i64<E>(self, n: i64) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                Ok(Number::Integer(n))
+            }
+
+            fn visit_u64<E>(self, n: u64) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+            {
+                Ok(Number::UInteger(n))
+            }
+        }
+
+        deserializer.deserialize_any(NumberVisitor)
+    }
+}
 
 impl<'de> Deserialize<'de> for Value {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
@@ -30,25 +70,25 @@ impl<'de> Deserialize<'de> for Value {
                 Ok(Value::None)
             }
 
-            fn visit_f64<E>(self, n: f64) -> Result<Self::Value, E>
+            fn visit_f64<E>(self, v: f64) -> Result<Self::Value, E>
             where
-                E: serde::de::Error,
+                E: de::Error,
             {
-                Ok(Value::Float(n))
+                Ok(Value::Number(Number::Float(v)))
             }
 
-            fn visit_i64<E>(self, n: i64) -> Result<Self::Value, E>
+            fn visit_i64<E>(self, v: i64) -> Result<Self::Value, E>
             where
-                E: serde::de::Error,
+                E: de::Error,
             {
-                Ok(Value::Integer(n))
+                Ok(Value::Number(Number::Integer(v)))
             }
 
-            fn visit_u64<E>(self, n: u64) -> Result<Self::Value, E>
+            fn visit_u64<E>(self, v: u64) -> Result<Self::Value, E>
             where
-                E: serde::de::Error,
+                E: de::Error,
             {
-                Ok(Value::UInteger(n))
+                Ok(Value::Number(Number::UInteger(v)))
             }
 
             fn visit_str<E>(self, s: &str) -> Result<Self::Value, E>

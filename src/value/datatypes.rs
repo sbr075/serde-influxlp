@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{fmt::Display, hash::Hash};
 
 use conv::*;
 use regex::Regex;
@@ -6,16 +6,8 @@ use serde::de;
 
 use crate::error::Error;
 
-/// Represents any supported InfluxDB v2 Line protocol value
 #[derive(Debug, Clone)]
-pub enum Value {
-    /// Represents a value which is not set
-    ///
-    /// Although not a valid line protocol datatype this is added to add support
-    /// for formats which allow nullable values. When serialized or deserialized
-    /// it will output nothing same as Rust's None
-    None,
-
+pub enum Number {
     /// Represent a floating point number field value
     Float(f64),
 
@@ -24,6 +16,169 @@ pub enum Value {
 
     /// Represent an unsigned integer number field value
     UInteger(u64),
+}
+
+impl PartialEq for Number {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Number::Float(n1), Number::Float(n2)) => n1 == n2,
+            (Number::Integer(n1), Number::Integer(n2)) => n1 == n2,
+            (Number::UInteger(n1), Number::UInteger(n2)) => n1 == n2,
+            _ => false,
+        }
+    }
+}
+
+impl Eq for Number {}
+
+impl Hash for Number {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        match *self {
+            Number::Float(n) => {
+                match n == 0.0 {
+                    true => 0.0f64.to_bits(),
+                    false => n.to_bits(),
+                }
+                .hash(state);
+            }
+            Number::Integer(n) => n.hash(state),
+            Number::UInteger(n) => n.hash(state),
+        }
+    }
+}
+
+impl Display for Number {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let number = match self {
+            Number::Float(n) => format!("{n}"),
+            Number::Integer(n) => format!("{n}i"),
+            Number::UInteger(n) => format!("{n}i"),
+        };
+
+        write!(f, "{number}")
+    }
+}
+
+impl Number {
+    fn visit<'de, V>(self, visitor: V) -> Result<V::Value, Error>
+    where
+        V: de::Visitor<'de>,
+    {
+        match self {
+            Number::Float(n) => visitor.visit_f64(n),
+            Number::Integer(n) => visitor.visit_i64(n),
+            Number::UInteger(n) => visitor.visit_u64(n),
+        }
+    }
+
+    /// Checks if ç is a float
+    pub fn is_float(&self) -> bool {
+        matches!(self, Number::Float(_))
+    }
+
+    /// Attempts to convert the inner value of self into a f64. If the
+    /// conversion fails None is returned instead
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// let number = Number::Integer(123);
+    ///
+    /// println!("{}", value.as_float());
+    /// // Output: 123.0
+    /// ```
+    pub fn as_float(&self) -> Option<f64> {
+        match *self {
+            Number::Float(n) => Some(n),
+            Number::Integer(n) => f64::value_from(n).ok(),
+            Number::UInteger(n) => f64::value_from(n).ok(),
+        }
+    }
+
+    /// Checks if number is a signed integer
+    pub fn is_int(&self) -> bool {
+        matches!(self, Number::Integer(_))
+    }
+
+    /// Attempts to convert the inner value of self into a i64. If the
+    /// conversion fails None is returned instead
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// let number = Number::Float(123.5);
+    ///
+    /// println!("{}", value.as_int());
+    /// // Output: 124
+    /// ```
+    pub fn as_int(&self) -> Option<i64> {
+        match *self {
+            Number::Float(v) => {
+                // Ensure `f64` fits within `i64` range
+                if v >= i64::MIN as f64 && v <= i64::MAX as f64 {
+                    Some(v.round() as i64)
+                } else {
+                    None
+                }
+            }
+            Number::Integer(v) => Some(v),
+            Number::UInteger(v) => i64::value_from(v).ok(),
+        }
+    }
+
+    /// Checks if number is an unsigned integer
+    pub fn is_uint(&self) -> bool {
+        matches!(self, Number::UInteger(_))
+    }
+
+    /// Attempts to convert the inner value of self into a u64. If the
+    /// conversion fails None is returned instead
+    ///
+    /// # Example
+    ///
+    /// ```rust
+    /// let number = Number::Float(123.4);
+    ///
+    /// println!("{}", value.as_int());
+    /// // Output: 123
+    /// ```
+    pub fn as_uint(&self) -> Option<u64> {
+        match *self {
+            Number::Float(v) => {
+                // Ensure `f64` fits within `u64` range
+                if v >= u64::MIN as f64 && v <= u64::MAX as f64 {
+                    Some(v.round() as u64)
+                } else {
+                    None
+                }
+            }
+            Number::Integer(v) => u64::value_from(v).ok(),
+            Number::UInteger(v) => Some(v),
+        }
+    }
+
+    /// An alternative to [Values](Value) `to_string` function. Instead uses the
+    /// inner values `to_string` function to convert self to a string.
+    pub fn as_string(&self) -> String {
+        match *self {
+            Number::Float(n) => n.to_string(),
+            Number::Integer(n) => n.to_string(),
+            Number::UInteger(n) => n.to_string(),
+        }
+    }
+}
+
+/// Represents any supported InfluxDB v2 Line protocol value
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum Value {
+    /// Represents a value which is not set
+    ///
+    /// Although not a valid line protocol datatype this is added to add support
+    /// for formats which allow nullable values. When serialized or deserialized
+    /// it will output nothing same as Rust's None
+    None,
+
+    Number(Number),
 
     /// Represent a string field value
     String(String),
@@ -50,7 +205,7 @@ impl Value {
                             Err(_) => return None,
                         };
 
-                        Value::Integer(number)
+                        Number::Integer(number)
                     }
                     false => {
                         let number = match value.parse() {
@@ -58,17 +213,17 @@ impl Value {
                             Err(_) => return None,
                         };
 
-                        Value::UInteger(number)
+                        Number::UInteger(number)
                     }
                 }
             }
             false => match value.parse::<f64>() {
-                Ok(value) => Value::Float(value),
+                Ok(value) => Number::Float(value),
                 Err(_) => return None,
             },
         };
 
-        Some(number)
+        Some(Value::Number(number))
     }
 
     pub(crate) fn from_bool_str(s: &str) -> Option<Self> {
@@ -103,9 +258,7 @@ impl Value {
     {
         match self {
             Value::None => visitor.visit_none(),
-            Value::Float(n) => visitor.visit_f64(n),
-            Value::Integer(n) => visitor.visit_i64(n),
-            Value::UInteger(n) => visitor.visit_u64(n),
+            Value::Number(n) => n.visit(visitor),
             Value::String(s) => visitor.visit_string(s),
             Value::Boolean(b) => visitor.visit_bool(b),
         }
@@ -116,9 +269,7 @@ impl Display for Value {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let value = match self {
             Value::None => format!(""),
-            Value::Float(n) => format!("{n}"),
-            Value::Integer(n) => format!("{n}i"),
-            Value::UInteger(n) => format!("{n}i"),
+            Value::Number(n) => n.to_string(),
             Value::String(s) => format!("{s}"),
             Value::Boolean(b) => format!("{b}"),
         };
@@ -153,61 +304,61 @@ impl From<String> for Value {
 
 impl From<f32> for Value {
     fn from(n: f32) -> Self {
-        Value::Float(n.into())
+        Value::Number(Number::Float(n.into()))
     }
 }
 
 impl From<f64> for Value {
     fn from(n: f64) -> Self {
-        Value::Float(n)
+        Value::Number(Number::Float(n))
     }
 }
 
 impl From<i8> for Value {
     fn from(n: i8) -> Self {
-        Value::Integer(n.into())
+        Value::Number(Number::Integer(n.into()))
     }
 }
 
 impl From<i16> for Value {
     fn from(n: i16) -> Self {
-        Value::Integer(n.into())
+        Value::Number(Number::Integer(n.into()))
     }
 }
 
 impl From<i32> for Value {
     fn from(n: i32) -> Self {
-        Value::Integer(n.into())
+        Value::Number(Number::Integer(n.into()))
     }
 }
 
 impl From<i64> for Value {
     fn from(n: i64) -> Self {
-        Value::Integer(n)
+        Value::Number(Number::Integer(n))
     }
 }
 
 impl From<u8> for Value {
     fn from(n: u8) -> Self {
-        Value::UInteger(n.into())
+        Value::Number(Number::UInteger(n.into()))
     }
 }
 
 impl From<u16> for Value {
-    fn from(value: u16) -> Self {
-        Value::UInteger(value.into())
+    fn from(n: u16) -> Self {
+        Value::Number(Number::UInteger(n.into()))
     }
 }
 
 impl From<u32> for Value {
     fn from(n: u32) -> Self {
-        Value::UInteger(n.into())
+        Value::Number(Number::UInteger(n.into()))
     }
 }
 
 impl From<u64> for Value {
     fn from(n: u64) -> Self {
-        Value::UInteger(n)
+        Value::Number(Number::UInteger(n))
     }
 }
 
@@ -230,7 +381,10 @@ impl Value {
 
     /// Checks if value is a float
     pub fn is_float(&self) -> bool {
-        matches!(self, Value::Float(_))
+        match self {
+            Value::Number(n) => n.is_float(),
+            _ => false,
+        }
     }
 
     /// Attempts to convert the inner value of self into a f64. If the
@@ -248,9 +402,7 @@ impl Value {
     /// ```
     pub fn as_float(&self) -> Option<f64> {
         match self {
-            Value::Float(n) => Some(*n),
-            Value::Integer(n) => f64::value_from(*n).ok(),
-            Value::UInteger(n) => f64::value_from(*n).ok(),
+            Value::Number(n) => n.as_float(),
             Value::String(s) => s.parse::<f64>().ok(),
             _ => None,
         }
@@ -258,7 +410,10 @@ impl Value {
 
     /// Checks if value is a signed integer
     pub fn is_int(&self) -> bool {
-        matches!(self, Value::Integer(_))
+        match self {
+            Value::Number(n) => n.is_int(),
+            _ => false,
+        }
     }
 
     /// Attempts to convert the inner value of self into a i64. If the
@@ -277,16 +432,7 @@ impl Value {
     /// ```
     pub fn as_int(&self) -> Option<i64> {
         match self {
-            Value::Float(v) => {
-                // Ensure `f64` fits within `i64` range
-                if *v >= i64::MIN as f64 && *v <= i64::MAX as f64 {
-                    Some(v.round() as i64)
-                } else {
-                    None
-                }
-            }
-            Value::Integer(v) => Some(*v),
-            Value::UInteger(v) => i64::value_from(*v).ok(),
+            Value::Number(n) => n.as_int(),
             Value::String(v) => v.parse::<i64>().ok(),
             _ => None,
         }
@@ -294,7 +440,10 @@ impl Value {
 
     /// Checks if value is an unsigned integer
     pub fn is_uint(&self) -> bool {
-        matches!(self, Value::UInteger(_))
+        match self {
+            Value::Number(n) => n.is_uint(),
+            _ => false,
+        }
     }
 
     /// Attempts to convert the inner value of self into a u64. If the
@@ -313,16 +462,7 @@ impl Value {
     /// ```
     pub fn as_uint(&self) -> Option<u64> {
         match self {
-            Value::Float(v) => {
-                // Ensure `f64` fits within `u64` range
-                if *v >= u64::MIN as f64 && *v <= u64::MAX as f64 {
-                    Some(v.round() as u64)
-                } else {
-                    None
-                }
-            }
-            Value::Integer(v) => u64::value_from(*v).ok(),
-            Value::UInteger(v) => Some(*v),
+            Value::Number(v) => v.as_uint(),
             Value::String(v) => v.parse::<u64>().ok(),
             _ => None,
         }
@@ -352,13 +492,12 @@ impl Value {
     /// // Output: 123i
     /// ```
     ///
-    /// This function is here mainly to offer an alternative
+    /// This function is here mainly to offer an alternative to the line
+    /// protocol formatted datatypes
     pub fn as_string(&self) -> String {
         match self {
             Value::None => self.to_string(),
-            Value::Float(n) => n.to_string(),
-            Value::Integer(n) => n.to_string(),
-            Value::UInteger(n) => n.to_string(),
+            Value::Number(n) => n.to_string(),
             Value::String(s) => s.to_string(),
             Value::Boolean(b) => b.to_string(),
         }
