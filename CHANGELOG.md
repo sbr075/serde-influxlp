@@ -11,8 +11,12 @@ All notable changes to this project will be documented in this file.
 
 ### 🐛 Bug Fixes
 
-- Deserialize single line to vec returns empty vec ([33c0c22](https://github.com/sbr075/serde-influxlp/commit/33c0c22a4cab5314eb0fef9a608ffec720ca965f))
-- Skip writing none values ([77380c8](https://github.com/sbr075/serde-influxlp/commit/77380c8c1585066b5beadc3923b40bc9cd0104e4))
+- Deserialize single line to vec returns empty vec ([720c898](https://github.com/sbr075/serde-influxlp/commit/720c898f3567d221d3a44a848c4b9c62e7fb8916))
+- Skip writing none values ([649b8f4](https://github.com/sbr075/serde-influxlp/commit/649b8f4a7e2fc506bb5948dba62d0006440beab3))
+
+### 🧹 Routine Tasks
+
+- Bump version from 0.1.0 to 0.1.1 ([322c106](https://github.com/sbr075/serde-influxlp/commit/322c1068dc36b6a0fb2899a05386518873123d23))
 
 ## [0.1.0] - 2024-11-13
 
