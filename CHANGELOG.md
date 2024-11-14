@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [unreleased]
+## [0.1.1] - 2024-11-14
 
 ### 🚀 Features
 
@@ -16,7 +16,7 @@ All notable changes to this project will be documented in this file.
 
 ### 🧹 Routine Tasks
 
-- Bump version from 0.1.0 to 0.1.1 ([322c106](https://github.com/sbr075/serde-influxlp/commit/322c1068dc36b6a0fb2899a05386518873123d23))
+- Bump version from 0.1.0 to 0.1.1 ([d2823a2](https://github.com/sbr075/serde-influxlp/commit/d2823a25275296bcc4d6ede7afdc7a392545f2fb))
 
 ## [0.1.0] - 2024-11-13
 
