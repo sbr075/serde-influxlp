@@ -379,6 +379,11 @@ impl Value {
         self
     }
 
+    /// Checks if value is a none
+    pub fn is_none(&self) -> bool {
+        matches!(self, Value::None)
+    }
+
     /// Checks if value is a float
     pub fn is_float(&self) -> bool {
         match self {
@@ -425,7 +430,7 @@ impl Value {
     /// # Example
     ///
     /// ```rust
-    /// let value = Value::Float(9.5);
+    /// let value = Value::from(9.5);
     ///
     /// println!("{}", value.as_int());
     /// // Output: 10
@@ -455,7 +460,7 @@ impl Value {
     /// # Example
     ///
     /// ```rust
-    /// let value = Value::Integer(10);
+    /// let value = Value::from(10);
     ///
     /// println!("{}", value.as_uint());
     /// // Output: 10
@@ -483,7 +488,7 @@ impl Value {
     /// # Example
     ///
     /// ```rust
-    /// let value = Value::Integer(123);
+    /// let value = Value::from(123);
     ///
     /// println!("{}", value.as_string());
     /// // Output: 123

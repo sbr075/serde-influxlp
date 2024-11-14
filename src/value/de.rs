@@ -273,7 +273,7 @@ impl<'de> de::Deserializer<'de> for Value {
 /// # Example
 ///
 /// ```rust
-/// let number = Value::Integer(123);
+/// let number = Value::from(123);
 ///
 /// let value: f64 = serde_influxlp::from_value(number).unwrap();
 /// println!("{value}");

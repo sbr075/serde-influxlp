@@ -16,18 +16,12 @@ struct LineBuilder {
 }
 
 impl LineBuilder {
-    fn set_measurement<T>(&mut self, measurement: T)
-    where
-        T: Into<Value>,
-    {
-        self.measurement = Some(measurement.into())
+    fn set_measurement(&mut self, measurement: Value) {
+        self.measurement = Some(measurement)
     }
 
-    fn add_tag<T>(&mut self, tag: T)
-    where
-        T: Into<Value>,
-    {
-        self.tags.get_or_insert(Vec::new()).push(tag.into());
+    fn add_tag(&mut self, tag: Value) {
+        self.tags.get_or_insert(Vec::new()).push(tag);
     }
 
     fn remove_tag(&mut self) {
@@ -36,11 +30,8 @@ impl LineBuilder {
         }
     }
 
-    fn add_field<T>(&mut self, field: T)
-    where
-        T: Into<Value>,
-    {
-        self.fields.get_or_insert(Vec::new()).push(field.into());
+    fn add_field(&mut self, field: Value) {
+        self.fields.get_or_insert(Vec::new()).push(field);
     }
 
     fn remove_field(&mut self) {
@@ -49,11 +40,8 @@ impl LineBuilder {
         }
     }
 
-    fn set_timestamp<T>(&mut self, timestamp: T)
-    where
-        T: Into<Value>,
-    {
-        self.timestamp = Some(timestamp.into())
+    fn set_timestamp(&mut self, timestamp: Value) {
+        self.timestamp = Some(timestamp)
     }
 
     fn reset(&mut self) {
@@ -97,7 +85,11 @@ impl LineBuilder {
             None => return Err(Error::missing_element("measurement")),
         }
 
-        if let Some(ref tags) = self.tags {
+        if let Some(tags) = self
+            .tags
+            .as_ref()
+            .and_then(|v| if !v.is_empty() { Some(v) } else { None })
+        {
             // We should not reach a state where the tag set is uneven but I am untrusting
             let tag_set: Vec<&[Value]> = tags.chunks(2).collect();
             if !tag_set.iter().all(|c| c.len() == 2) {
@@ -119,6 +111,10 @@ impl LineBuilder {
 
         match self.fields {
             Some(ref fields) => {
+                if fields.is_empty() {
+                    return Err(Error::missing_element("fields"));
+                }
+
                 // We should not reach a state where the tag set is uneven but I am untrusting
                 let field_set: Vec<&[Value]> = fields.chunks(2).collect();
                 if !field_set.iter().all(|c| c.len() == 2) {
@@ -185,6 +181,11 @@ impl Writer {
     where
         T: Into<Value>,
     {
+        let value = value.into();
+        if value.is_none() {
+            return;
+        }
+
         match self.curr {
             Element::Measurement => self.builder.set_measurement(value),
             Element::Tags => self.builder.add_tag(value),
