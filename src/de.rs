@@ -245,7 +245,7 @@ impl<'de> de::Deserializer<'de> for &mut Deserializer<'de> {
     where
         V: de::Visitor<'de>,
     {
-        visitor.visit_seq(self)
+        visitor.visit_seq(SeqDeserializer::new(self))
     }
 
     fn deserialize_tuple<V>(self, _len: usize, visitor: V) -> Result<V::Value>
@@ -338,19 +338,38 @@ impl<'a> de::MapAccess<'a> for Deserializer<'a> {
     }
 }
 
-impl<'a> de::SeqAccess<'a> for Deserializer<'a> {
+struct SeqDeserializer<'a, 'de: 'a> {
+    de: &'a mut Deserializer<'de>,
+
+    first: bool,
+}
+
+impl<'a, 'de: 'a> SeqDeserializer<'a, 'de> {
+    fn new(de: &'a mut Deserializer<'de>) -> Self {
+        SeqDeserializer { de, first: true }
+    }
+}
+
+impl<'a, 'de: 'a> de::SeqAccess<'de> for SeqDeserializer<'a, 'de> {
     type Error = Error;
 
     fn next_element_seed<T>(&mut self, seed: T) -> Result<Option<T::Value>>
     where
-        T: de::DeserializeSeed<'a>,
+        T: de::DeserializeSeed<'de>,
     {
-        if !self.has_next_line() {
-            return Ok(None);
+        // Skip the check and next line fetching if this is the first access
+        match !self.first {
+            true => {
+                if !self.de.has_next_line() {
+                    return Ok(None);
+                }
+
+                self.de.next_line();
+            }
+            false => self.first = false,
         }
 
-        self.next_line();
-        seed.deserialize(self).map(Some)
+        seed.deserialize(&mut *self.de).map(Some)
     }
 }
 
