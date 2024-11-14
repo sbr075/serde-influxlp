@@ -9,6 +9,13 @@ use crate::error::Error;
 /// Represents any supported InfluxDB v2 Line protocol value
 #[derive(Debug, Clone)]
 pub enum Value {
+    /// Represents a value which is not set
+    ///
+    /// Although not a valid line protocol datatype this is added to add support
+    /// for formats which allow nullable values. When serialized or deserialized
+    /// it will output nothing same as Rust's None
+    None,
+
     /// Represent a floating point number field value
     Float(f64),
 
@@ -95,6 +102,7 @@ impl Value {
         V: de::Visitor<'de>,
     {
         match self {
+            Value::None => visitor.visit_none(),
             Value::Float(n) => visitor.visit_f64(n),
             Value::Integer(n) => visitor.visit_i64(n),
             Value::UInteger(n) => visitor.visit_u64(n),
@@ -107,6 +115,7 @@ impl Value {
 impl Display for Value {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let value = match self {
+            Value::None => format!(""),
             Value::Float(n) => format!("{n}"),
             Value::Integer(n) => format!("{n}i"),
             Value::UInteger(n) => format!("{n}i"),
@@ -346,6 +355,7 @@ impl Value {
     /// This function is here mainly to offer an alternative
     pub fn as_string(&self) -> String {
         match self {
+            Value::None => self.to_string(),
             Value::Float(n) => n.to_string(),
             Value::Integer(n) => n.to_string(),
             Value::UInteger(n) => n.to_string(),
