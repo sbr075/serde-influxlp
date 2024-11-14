@@ -5,7 +5,7 @@ use std::{
 
 use serde::{de, ser};
 
-use crate::de::Position;
+use crate::reader::datatypes::Position;
 
 pub(crate) type Result<T> = std::result::Result<T, Error>;
 
@@ -29,7 +29,7 @@ pub enum ErrorCode {
     },
 
     /// Failed to deserialize value as it is not recognized
-    InvalidValue(String),
+    InvalidValue,
 
     /// Field type was defined as char but value was not a valid char
     InvalidChar {
@@ -105,11 +105,10 @@ impl Display for Error {
                     self.position.column, self.position.line
                 )
             }
-            ErrorCode::InvalidValue(v) => {
+            ErrorCode::InvalidValue => {
                 format!(
-                    "invalid value: `{v}` at column {}, line {}",
-                    self.position.column - v.len(),
-                    self.position.line
+                    "invalid value at column {}, line {}",
+                    self.position.column, self.position.line
                 )
             }
             ErrorCode::InvalidChar { got: char, len } => {
@@ -168,14 +167,7 @@ impl Error {
     pub(crate) fn unexpected_eof() -> Self {
         Error {
             code: ErrorCode::UnexpectedEof,
-            position: Position::default(),
-        }
-    }
-
-    pub(crate) fn empty_input() -> Self {
-        Error {
-            code: ErrorCode::EmptyInput,
-            position: Position::default(),
+            position: Position::new(),
         }
     }
 
@@ -193,9 +185,9 @@ impl Error {
         }
     }
 
-    pub(crate) fn invalid_value(value: impl ToString, position: Position) -> Self {
+    pub(crate) fn invalid_value(position: Position) -> Self {
         Error {
-            code: ErrorCode::InvalidValue(value.to_string()),
+            code: ErrorCode::InvalidValue,
             position,
         }
     }
@@ -220,42 +212,42 @@ impl Error {
     pub(crate) fn infinite_float() -> Self {
         Error {
             code: ErrorCode::InfiniteFloat,
-            position: Position::default(),
+            position: Position::new(),
         }
     }
 
     pub(crate) fn invalid_key() -> Self {
         Error {
             code: ErrorCode::InvalidKey,
-            position: Position::default(),
+            position: Position::new(),
         }
     }
 
     pub(crate) fn invalid_field_type(typ: impl ToString) -> Self {
         Error {
             code: ErrorCode::InvalidFieldType(typ.to_string()),
-            position: Position::default(),
+            position: Position::new(),
         }
     }
 
     pub(crate) fn missing_element(element: impl ToString) -> Self {
         Error {
             code: ErrorCode::MissingElement(element.to_string()),
-            position: Position::default(),
+            position: Position::new(),
         }
     }
 
     pub(crate) fn uneven_set(set: impl ToString) -> Self {
         Error {
             code: ErrorCode::UnevenSet(set.to_string()),
-            position: Position::default(),
+            position: Position::new(),
         }
     }
 
     pub(crate) fn unsupported(feature: impl ToString) -> Self {
         Error {
             code: ErrorCode::UnsupportedFeature(feature.to_string()),
-            position: Position::default(),
+            position: Position::new(),
         }
     }
 }

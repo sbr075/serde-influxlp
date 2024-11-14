@@ -270,7 +270,7 @@ pub(crate) mod value;
 pub(crate) mod writer;
 
 pub use crate::{
-    de::from_str,
+    de::{from_reader, from_slice, from_str},
     error::{Error, ErrorCode},
     ser::to_string,
     value::{datatypes::Value, de::from_value, ser::to_value},
