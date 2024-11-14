@@ -31,10 +31,6 @@ pub(crate) struct Reader<'a> {
     elements: &'a [&'a str],
 
     position: Position,
-
-    /// Should eventually create a SeqDeserializer which can hold this value
-    /// instead but for now it can live here
-    first: bool,
 }
 
 impl<'a> Reader<'a> {
@@ -59,18 +55,10 @@ impl<'a> Reader<'a> {
             next: Element::Measurement,
             elements: &[],
             position: Position::default(),
-            first: true,
         }
     }
 
     pub fn next_line(&mut self) {
-        // Temporary hack to ignore the first line pop if this is the first time
-        // next_line is called
-        if self.first {
-            self.first = false;
-            return;
-        };
-
         self.input = self.lines.remove(0);
         self.position.line += 1;
         self.position.column = 0;
@@ -134,7 +122,7 @@ impl<'a> Reader<'a> {
     }
 
     pub fn has_next_line(&mut self) -> bool {
-        !self.lines.is_empty() || self.first
+        !self.lines.is_empty()
     }
 
     /// Check if there are anymore keys to parse in current element
