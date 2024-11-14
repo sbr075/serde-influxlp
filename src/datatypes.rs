@@ -35,8 +35,4 @@ impl Element {
     pub(crate) fn is_tags(&self) -> bool {
         matches!(self, Element::Tags)
     }
-
-    pub(crate) fn is_fields(&self) -> bool {
-        matches!(self, Element::Fields)
-    }
 }
