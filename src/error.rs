@@ -14,6 +14,8 @@ pub enum ErrorCode {
     /// A custom error message
     Message(String),
 
+    EmptyInput,
+
     /// Reached end of line earlier than expected
     UnexpectedEof,
 
@@ -21,13 +23,19 @@ pub enum ErrorCode {
     UnexpectedChar(String),
 
     /// Tried to deserialize from an unsupported type
-    InvalidType { got: String, expected: String },
+    InvalidType {
+        got: String,
+        expected: String,
+    },
 
     /// Failed to deserialize value as it is not recognized
     InvalidValue(String),
 
     /// Field type was defined as char but value was not a valid char
-    InvalidChar { got: String, len: usize },
+    InvalidChar {
+        got: String,
+        len: usize,
+    },
 
     /// Tried to serialize an infinite float to a string
     InfiniteFloat,
@@ -88,6 +96,7 @@ impl Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let err = match &self.code {
             ErrorCode::Message(v) => v.to_string(),
+            ErrorCode::EmptyInput => "empty input".to_string(),
             ErrorCode::UnexpectedEof => "unexpected eof".to_string(),
             ErrorCode::InvalidType { got, expected } => {
                 format!(
@@ -131,7 +140,7 @@ impl Display for Error {
             }
         };
 
-        write!(f, "{err}")
+        write!(f, "an error occured: {err}")
     }
 }
 
@@ -159,6 +168,13 @@ impl Error {
     pub(crate) fn unexpected_eof() -> Self {
         Error {
             code: ErrorCode::UnexpectedEof,
+            position: Position::default(),
+        }
+    }
+
+    pub(crate) fn empty_input() -> Self {
+        Error {
+            code: ErrorCode::EmptyInput,
             position: Position::default(),
         }
     }
