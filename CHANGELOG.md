@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [unreleased]
+
+### 🚜 Refactor
+
+- Move first read flag to seq deserializer ([aa46bc0](https://github.com/sbr075/serde-influxlp/commit/aa46bc0b2b0bff3e1d262a26fd1185ed5e76f722))
+
 ## [0.1.1] - 2024-11-14
 
 ### 🚀 Features
