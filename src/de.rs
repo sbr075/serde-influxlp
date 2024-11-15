@@ -1,29 +1,29 @@
+use std::io;
+
 use regex::Regex;
 use serde::{
-    de::{self, value::StringDeserializer, IntoDeserializer},
+    de::{self, value::StringDeserializer, DeserializeOwned, IntoDeserializer},
     Deserialize,
 };
 
-#[derive(Debug, Clone, Default)]
-pub struct Position {
-    pub column: usize,
-
-    pub line: usize,
-}
-
-use crate::Value;
-
-use super::{
-    error::{Error, Result},
-    reader::Reader,
+use crate::{
+    reader::{self, Reader},
+    Value,
 };
 
-struct Deserializer<'de> {
-    reader: Reader<'de>,
+use self::reader::datatypes::Position;
+
+use super::error::{Error, Result};
+
+struct Deserializer<R> {
+    reader: R,
 }
 
-impl<'de> Deserializer<'de> {
-    fn from_reader(reader: Reader<'de>) -> Self {
+impl<'de, R> Deserializer<R>
+where
+    R: Reader<'de>,
+{
+    fn from_reader(reader: R) -> Self {
         Deserializer { reader }
     }
 
@@ -31,36 +31,32 @@ impl<'de> Deserializer<'de> {
         self.reader.get_position()
     }
 
-    /// Set the expected elements the reader should look for
-    ///
-    /// If the reader tries to read a field which is not defined it will skip it
-    fn set_elements(&mut self, fields: &'de [&'de str]) -> Result<()> {
-        self.reader.set_elements(fields)
+    fn include_tags(&mut self) {
+        self.reader.include_tags();
     }
 
-    /// Check if there are any more lines to parse
     fn has_next_line(&mut self) -> bool {
         self.reader.has_next_line()
     }
 
-    /// Reset the reader so it is ready to parse a new line
-    fn next_line(&mut self) {
-        self.reader.next_line()
+    fn set_next_line(&mut self) {
+        self.reader.set_next_line()
     }
 
-    /// Check if the current element has any key-value pairs left
     fn has_next_key(&mut self) -> Result<bool> {
         self.reader.has_next_key()
     }
 
-    /// Parse the next element keys
-    fn next_element_key(&mut self) -> Result<String> {
-        self.reader.next_element_key()
+    fn get_next_key(&mut self) -> Result<String> {
+        self.reader.get_next_key()
     }
 
-    /// Parse the next element value
-    fn next_element_value(&mut self) -> Result<String> {
-        self.reader.next_element_value()
+    fn get_next_value(&mut self) -> Result<String> {
+        self.reader.get_next_value()
+    }
+
+    fn discard_next_value(&mut self) -> Result<()> {
+        self.reader.discard_next_value()
     }
 }
 
@@ -70,43 +66,43 @@ macro_rules! deserialize_integer {
         where
             V: de::Visitor<'de>,
         {
-            let mut element = self.next_element_value()?;
+            let mut value = self.get_next_value()?;
 
             // Check if element is a valid number
             let re = Regex::new(r"^-?\d+i?$").unwrap();
-            let value = match re.is_match(&element) {
+            let value = match re.is_match(&value) {
                 true => {
                     // Remove integer indicator
-                    if element.ends_with("i") {
-                        element.pop();
+                    if value.ends_with("i") {
+                        value.pop();
                     }
 
-                    element.parse()
+                    value.parse()
                 }
-                false => return Err(Error::invalid_value(&element, self.reader_position())),
+                false => return Err(Error::invalid_value(self.reader_position())),
             };
 
             match value {
                 Ok(value) => visitor.$visit(value),
-                Err(_) => Err(Error::invalid_value(&element, self.reader_position())),
+                Err(_) => Err(Error::invalid_value(self.reader_position())),
             }
         }
     };
 }
 
-impl<'de> de::Deserializer<'de> for &mut Deserializer<'de> {
+impl<'de, R: Reader<'de>> de::Deserializer<'de> for &mut Deserializer<R> {
     type Error = Error;
 
     fn deserialize_any<V>(self, visitor: V) -> Result<V::Value>
     where
         V: de::Visitor<'de>,
     {
-        let element = self.next_element_value()?;
+        let element = self.get_next_value()?;
         let value = Value::from_any_str(&element).visit(visitor);
 
         match value {
             Ok(value) => Ok(value),
-            Err(_) => Err(Error::invalid_value(element, self.reader_position())),
+            Err(_) => Err(Error::invalid_value(self.reader_position())),
         }
     }
 
@@ -114,7 +110,7 @@ impl<'de> de::Deserializer<'de> for &mut Deserializer<'de> {
     where
         V: de::Visitor<'de>,
     {
-        let element = self.next_element_value()?;
+        let element = self.get_next_value()?;
         let value = match Value::from_bool_str(&element) {
             Some(value) => value.visit(visitor),
             None => {
@@ -149,7 +145,7 @@ impl<'de> de::Deserializer<'de> for &mut Deserializer<'de> {
     where
         V: de::Visitor<'de>,
     {
-        let element = self.next_element_value()?;
+        let element = self.get_next_value()?;
         let value = match element.parse() {
             Ok(value) => value,
             Err(_) => return Err(Error::invalid_type(&element, "f32", self.reader_position())),
@@ -162,7 +158,7 @@ impl<'de> de::Deserializer<'de> for &mut Deserializer<'de> {
     where
         V: de::Visitor<'de>,
     {
-        let element = self.next_element_value()?;
+        let element = self.get_next_value()?;
         let value = match element.parse() {
             Ok(value) => value,
             Err(_) => return Err(Error::invalid_type(&element, "f64", self.reader_position())),
@@ -175,7 +171,7 @@ impl<'de> de::Deserializer<'de> for &mut Deserializer<'de> {
     where
         V: de::Visitor<'de>,
     {
-        let element = self.next_element_key()?;
+        let element = self.get_next_value()?;
         let len = element.chars().count();
         if len != 1 {
             return Err(Error::invalid_char(element, len, self.reader_position()));
@@ -187,16 +183,14 @@ impl<'de> de::Deserializer<'de> for &mut Deserializer<'de> {
     where
         V: de::Visitor<'de>,
     {
-        self.next_element_value()
-            .and_then(|e| visitor.visit_str(&e))
+        self.get_next_value().and_then(|e| visitor.visit_str(&e))
     }
 
     fn deserialize_string<V>(self, visitor: V) -> Result<V::Value>
     where
         V: de::Visitor<'de>,
     {
-        self.next_element_value()
-            .and_then(|e| visitor.visit_str(&e))
+        self.get_next_value().and_then(|e| visitor.visit_str(&e))
     }
 
     fn deserialize_bytes<V>(self, _visitor: V) -> Result<V::Value>
@@ -283,7 +277,10 @@ impl<'de> de::Deserializer<'de> for &mut Deserializer<'de> {
     where
         V: de::Visitor<'de>,
     {
-        self.set_elements(fields)?;
+        if fields.contains(&"tags") {
+            self.include_tags();
+        };
+
         visitor.visit_map(self)
     }
 
@@ -310,12 +307,12 @@ impl<'de> de::Deserializer<'de> for &mut Deserializer<'de> {
     where
         V: de::Visitor<'de>,
     {
-        let _ = self.next_element_value()?;
+        self.discard_next_value()?;
         visitor.visit_unit()
     }
 }
 
-impl<'a> de::MapAccess<'a> for Deserializer<'a> {
+impl<'a, R: Reader<'a>> de::MapAccess<'a> for Deserializer<R> {
     type Error = Error;
 
     fn next_key_seed<K>(&mut self, seed: K) -> Result<Option<K::Value>>
@@ -326,7 +323,7 @@ impl<'a> de::MapAccess<'a> for Deserializer<'a> {
             return Ok(None);
         }
 
-        let key = self.next_element_key()?;
+        let key = self.get_next_key()?;
         seed.deserialize(StringDeserializer::new(key)).map(Some)
     }
 
@@ -338,19 +335,19 @@ impl<'a> de::MapAccess<'a> for Deserializer<'a> {
     }
 }
 
-struct SeqDeserializer<'a, 'de: 'a> {
-    de: &'a mut Deserializer<'de>,
+struct SeqDeserializer<'a, R: 'a> {
+    de: &'a mut Deserializer<R>,
 
     first: bool,
 }
 
-impl<'a, 'de: 'a> SeqDeserializer<'a, 'de> {
-    fn new(de: &'a mut Deserializer<'de>) -> Self {
+impl<'a, R: 'a> SeqDeserializer<'a, R> {
+    fn new(de: &'a mut Deserializer<R>) -> Self {
         SeqDeserializer { de, first: true }
     }
 }
 
-impl<'a, 'de: 'a> de::SeqAccess<'de> for SeqDeserializer<'a, 'de> {
+impl<'de, 'a, R: Reader<'de> + 'a> de::SeqAccess<'de> for SeqDeserializer<'a, R> {
     type Error = Error;
 
     fn next_element_seed<T>(&mut self, seed: T) -> Result<Option<T::Value>>
@@ -364,7 +361,7 @@ impl<'a, 'de: 'a> de::SeqAccess<'de> for SeqDeserializer<'a, 'de> {
                     return Ok(None);
                 }
 
-                self.de.next_line();
+                self.de.set_next_line();
             }
             false => self.first = false,
         }
@@ -373,7 +370,7 @@ impl<'a, 'de: 'a> de::SeqAccess<'de> for SeqDeserializer<'a, 'de> {
     }
 }
 
-impl<'a> de::EnumAccess<'a> for &mut Deserializer<'a> {
+impl<'a, R: Reader<'a>> de::EnumAccess<'a> for &mut Deserializer<R> {
     type Error = Error;
     type Variant = Self;
 
@@ -381,13 +378,13 @@ impl<'a> de::EnumAccess<'a> for &mut Deserializer<'a> {
     where
         V: de::DeserializeSeed<'a>,
     {
-        let variant_name = self.next_element_value()?;
+        let variant_name = self.get_next_value()?;
         seed.deserialize(variant_name.into_deserializer())
             .map(|v| (v, self))
     }
 }
 
-impl<'a> de::VariantAccess<'a> for &mut Deserializer<'a> {
+impl<'a, R: Reader<'a>> de::VariantAccess<'a> for &mut Deserializer<R> {
     type Error = Error;
 
     fn unit_variant(self) -> Result<()> {
@@ -414,6 +411,26 @@ impl<'a> de::VariantAccess<'a> for &mut Deserializer<'a> {
     {
         de::Deserializer::deserialize_struct(self, "", fields, visitor)
     }
+}
+
+pub fn from_reader<T>(r: impl io::Read) -> Result<T>
+where
+    T: DeserializeOwned,
+{
+    let mut deserializer = Deserializer::from_reader(reader::IoReader::new(r));
+    let value = T::deserialize(&mut deserializer)?;
+
+    Ok(value)
+}
+
+pub fn from_slice<'a, T>(s: &'a [u8]) -> Result<T>
+where
+    T: Deserialize<'a>,
+{
+    let mut deserializer = Deserializer::from_reader(reader::SliceReader::new(s));
+    let value = T::deserialize(&mut deserializer)?;
+
+    Ok(value)
 }
 
 /// Deserialize a valid line protocol string into a struct T
@@ -454,15 +471,7 @@ pub fn from_str<'a, T>(s: &'a str) -> Result<T>
 where
     T: Deserialize<'a>,
 {
-    if s.trim().is_empty() {
-        return Err(Error::empty_input());
-    }
-
-    let reader = Reader::new(s);
-    let mut deserializer = Deserializer::from_reader(reader);
-    let value = T::deserialize(&mut deserializer)?;
-
-    Ok(value)
+    from_slice(s.as_bytes())
 }
 
 #[cfg(test)]
@@ -518,6 +527,8 @@ mod test {
 
         metric2,tag1=321,tag2=hello\ world,tag3=private field1=123,field2=True 123456789
 
+        #another comment line
+
         "#;
         let result = from_str::<Vec<Metric>>(lines);
         assert!(result.is_ok());
@@ -531,5 +542,48 @@ mod test {
 
         let result = result.unwrap();
         assert_eq!(result.len(), 1);
+
+        let line = r#"
+                
+        "#;
+        let result = from_str::<Metric>(line);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_de_from_reader() {
+        let line = "metric1,tag1=123,tag3=private field1=321,field2=t 123456789".as_bytes();
+        let result = from_reader::<Metric>(line);
+        assert!(result.is_ok());
+
+        let lines = r#"
+        metric1,tag1=123,tag3=public field1=321,field2=t 123456789
+        #comment line
+
+        metric2,tag1=321,tag2=hello\ world,tag3=private field1=123,field2=True 123456789
+
+        #another comment line
+
+        "#
+        .as_bytes();
+        let result = from_reader::<Vec<Metric>>(lines);
+        assert!(result.is_ok());
+
+        let result = result.unwrap();
+        assert_eq!(result.len(), 2);
+
+        let line = "metric1,tag1=123,tag3=private field1=321,field2=t 123456789".as_bytes();
+        let result = from_reader::<Vec<Metric>>(line);
+        assert!(result.is_ok());
+
+        let result = result.unwrap();
+        assert_eq!(result.len(), 1);
+
+        let line = r#"
+                
+        "#
+        .as_bytes();
+        let result = from_reader::<Metric>(line);
+        assert!(result.is_err());
     }
 }
