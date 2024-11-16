@@ -1,6 +1,7 @@
 use std::{
     error::Error as StdError,
-    fmt::{self, Display},
+    fmt::{self, Debug, Display},
+    io,
 };
 
 use serde::{de, ser};
@@ -9,10 +10,11 @@ use crate::reader::datatypes::Position;
 
 pub(crate) type Result<T> = std::result::Result<T, Error>;
 
-#[derive(Debug, Clone)]
 pub enum ErrorCode {
     /// A custom error message
     Message(String),
+
+    Io(io::Error),
 
     EmptyInput,
 
@@ -81,7 +83,6 @@ pub enum ErrorCode {
 ///     }
 /// }
 /// ```
-#[derive(Debug, Clone)]
 pub struct Error {
     /// Error code indicating what went wrong
     pub code: ErrorCode,
@@ -96,6 +97,7 @@ impl Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let err = match &self.code {
             ErrorCode::Message(v) => v.to_string(),
+            ErrorCode::Io(v) => v.to_string(),
             ErrorCode::EmptyInput => "empty input".to_string(),
             ErrorCode::UnexpectedEof => "unexpected eof".to_string(),
             ErrorCode::InvalidType { got, expected } => {
@@ -141,6 +143,12 @@ impl Display for Error {
     }
 }
 
+impl Debug for Error {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Error: {self}")
+    }
+}
+
 impl StdError for Error {}
 
 impl de::Error for Error {
@@ -156,6 +164,15 @@ impl ser::Error for Error {
     fn custom<T: fmt::Display>(msg: T) -> Error {
         Error {
             code: ErrorCode::Message(msg.to_string()),
+            position: Position::new(),
+        }
+    }
+}
+
+impl From<io::Error> for Error {
+    fn from(value: io::Error) -> Self {
+        Error {
+            code: ErrorCode::Io(value),
             position: Position::new(),
         }
     }
