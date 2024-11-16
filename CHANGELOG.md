@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
+### 🚀 Features
+
+- Add slice and io readers ([084d8d3](https://github.com/sbr075/serde-influxlp/commit/084d8d32a459faf3c8152d06aca56295683aab46))
+
+### 🐛 Bug Fixes
+
+- Reported error position should be corrrect ([0950bc4](https://github.com/sbr075/serde-influxlp/commit/0950bc48ec63ec070d57404b6f3a24b1b9fcc1a9))
+
 ### 🚜 Refactor
 
 - Move first read flag to seq deserializer ([aa46bc0](https://github.com/sbr075/serde-influxlp/commit/aa46bc0b2b0bff3e1d262a26fd1185ed5e76f722))
