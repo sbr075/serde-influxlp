@@ -492,38 +492,14 @@ impl<'a> SerializeStruct for TypeSerializer<'a> {
     }
 }
 
-pub fn to_writer<W, T>(mut writer: W, value: &T) -> Result<()>
-where
-    W: io::Write,
-    T: Serialize,
-{
-    let mut serializer = Serializer::new();
-    value.serialize(&mut serializer)?;
-
-    let output = serializer.output();
-    writer.write_all(output.as_bytes())?;
-
-    Ok(())
-}
-
-pub fn to_vec<T>(value: &T) -> Result<Vec<u8>>
-where
-    T: Serialize,
-{
-    let mut writer = Vec::new();
-    to_writer(&mut writer, value)?;
-    Ok(writer)
-}
-
-/// Serialize a valid data structure to a InfluxDB V2 Line protocol
+/// Serialize a valid data structure `T` to a InfluxDB v2 Line protocol written
+/// into the specified writer
 ///
 /// # Example
 ///
 /// Below is an example of the least required for serialization to succeed
 ///
 /// ```rust
-/// use serde_influxlp::Value;
-///
 /// #[derive(Debug, Serialize, Deserialize)]
 /// pub struct Fields {
 ///     pub field1: i32,
@@ -538,13 +514,101 @@ where
 ///
 /// fn main() {
 ///     let metric = Metric {
-///         measurement: "measurement".to_string(),
+///         measurement: "metric1".to_string(),
+///         fields: Fields { field1: 123 },
+///     };
+///
+///     let file = File::create("output.txt").unwrap();
+///
+///     let vec = serde_influxlp::to_writer(file, &metric).unwrap();
+///     // Output: metric1 field1=123i
+/// }
+/// ```
+pub fn to_writer<W, T>(mut writer: W, value: &T) -> Result<()>
+where
+    W: io::Write,
+    T: Serialize,
+{
+    let mut serializer = Serializer::new();
+    value.serialize(&mut serializer)?;
+
+    let output = serializer.output();
+    writer.write_all(output.as_bytes())?;
+
+    Ok(())
+}
+
+/// Serialize a valid data structure `T` to a InfluxDB v2 Line protocol encoded
+/// as a vector of bytes
+///
+/// # Example
+///
+/// Below is an example of the least required for serialization to succeed
+///
+/// ```rust
+/// #[derive(Debug, Serialize, Deserialize)]
+/// pub struct Fields {
+///     pub field1: i32,
+/// }
+///
+/// #[derive(Debug, Serialize, Deserialize)]
+/// pub struct Metric {
+///     pub measurement: String,
+///
+///     pub fields: Fields,
+/// }
+///
+/// fn main() {
+///     let metric = Metric {
+///         measurement: "metric1".to_string(),
+///         fields: Fields { field1: 123 },
+///     };
+///
+///     let vec = serde_influxlp::to_vec(&metric).unwrap();
+///
+///     // Output should only be valid utf8
+///     let line = String::from_utf8(vec).unwrap();
+///     println!("{line}");
+///     // Output: metric1 field1=123i
+/// }
+/// ```
+pub fn to_vec<T>(value: &T) -> Result<Vec<u8>>
+where
+    T: Serialize,
+{
+    let mut writer = Vec::new();
+    to_writer(&mut writer, value)?;
+    Ok(writer)
+}
+
+/// Serialize a valid data structure `T` to a InfluxDB V2 Line protocol string
+///
+/// # Example
+///
+/// Below is an example of the least required for serialization to succeed
+///
+/// ```rust
+/// #[derive(Debug, Serialize, Deserialize)]
+/// pub struct Fields {
+///     pub field1: i32,
+/// }
+///
+/// #[derive(Debug, Serialize, Deserialize)]
+/// pub struct Metric {
+///     pub measurement: String,
+///
+///     pub fields: Fields,
+/// }
+///
+/// fn main() {
+///     let metric = Metric {
+///         measurement: "metric1".to_string(),
 ///         fields: Fields { field1: 123 },
 ///     };
 ///
 ///     let line = serde_influxlp::to_string(&metric).unwrap();
 ///     println!("{line}");
-///     // Output: measurement field1=123i
+///     // Output: metric1 field1=123i
 /// }
 /// ```
 pub fn to_string<T>(value: &T) -> Result<String>
