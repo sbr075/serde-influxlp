@@ -413,6 +413,40 @@ impl<'a, R: Reader<'a>> de::VariantAccess<'a> for &mut Deserializer<R> {
     }
 }
 
+/// Deserialize a valid line protocol from a reader into a struct `T`
+///
+/// # Example
+///
+/// Below is an example of the least required for deserialization to succeed
+///
+/// ```rust
+/// use serde_influxlp::Value;
+///
+/// #[derive(Debug, Serialize, Deserialize)]
+/// pub struct Fields {
+///     pub field1: i32,
+/// }
+///
+/// #[derive(Debug, Serialize, Deserialize)]
+/// pub struct Metric {
+///     pub measurement: String,
+///
+///     pub fields: Fields,
+/// }
+///
+/// fn main() {
+///     let file = File::open("lines.txt")?;
+///
+///     let metric: Metric = serde_influxlp::from_slice(file).unwrap();
+///     println!("{metric:#?}");
+///     // Output Metric {
+///     //     measurement: "measurement",
+///     //     fields: Fields {
+///     //         field1: 123,
+///     //     },
+///     // }
+/// }
+/// ```
 pub fn from_reader<T>(r: impl io::Read) -> Result<T>
 where
     T: DeserializeOwned,
@@ -423,6 +457,40 @@ where
     Ok(value)
 }
 
+/// Deserialize a valid line protocol string as bytes into a struct `T`
+///
+/// # Example
+///
+/// Below is an example of the least required for deserialization to succeed
+///
+/// ```rust
+/// use serde_influxlp::Value;
+///
+/// #[derive(Debug, Serialize, Deserialize)]
+/// pub struct Fields {
+///     pub field1: i32,
+/// }
+///
+/// #[derive(Debug, Serialize, Deserialize)]
+/// pub struct Metric {
+///     pub measurement: String,
+///
+///     pub fields: Fields,
+/// }
+///
+/// fn main() {
+///     let slice = "measurement field1=123i".as_bytes();
+///
+///     let metric: Metric = serde_influxlp::from_slice(slice).unwrap();
+///     println!("{metric:#?}");
+///     // Output Metric {
+///     //     measurement: "measurement",
+///     //     fields: Fields {
+///     //         field1: 123,
+///     //     },
+///     // }
+/// }
+/// ```
 pub fn from_slice<'a, T>(s: &'a [u8]) -> Result<T>
 where
     T: Deserialize<'a>,
@@ -433,11 +501,11 @@ where
     Ok(value)
 }
 
-/// Deserialize a valid line protocol string into a struct T
+/// Deserialize a valid line protocol string into a struct `T`
 ///
 /// # Example
 ///
-/// Below is an example of the least required for serialization to succeed
+/// Below is an example of the least required for deserialization to succeed
 ///
 /// ```rust
 /// use serde_influxlp::Value;
@@ -512,7 +580,7 @@ mod test {
 
         pub fields: Fields,
 
-        pub timestamp: i64,
+        pub timestamp: Option<i64>,
     }
 
     #[test]
