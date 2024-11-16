@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### 🚀 Features
 
 - Add slice and io readers ([084d8d3](https://github.com/sbr075/serde-influxlp/commit/084d8d32a459faf3c8152d06aca56295683aab46))
+- Add vec and io writers ([d5681dd](https://github.com/sbr075/serde-influxlp/commit/d5681dddde009881e29652bde668ff33d2a6057b))
 
 ### 🐛 Bug Fixes
 
@@ -20,6 +21,12 @@ All notable changes to this project will be documented in this file.
 ### 📚 Documentation
 
 - Add comments for reader functions ([072aaa0](https://github.com/sbr075/serde-influxlp/commit/072aaa0f41c0542b7aadc22539c06c8dca1e1715))
+- Update ser doc comments ([e96b537](https://github.com/sbr075/serde-influxlp/commit/e96b537681440a3fab2c85bd355ecda5a4bdb0d4))
+
+### 🧹 Routine Tasks
+
+- Fix license names ([b6cdf3d](https://github.com/sbr075/serde-influxlp/commit/b6cdf3d17b6b8c56809671149904c00f98672368))
+- Bump version number from 0.1.1 to 0.1.2 ([1085371](https://github.com/sbr075/serde-influxlp/commit/1085371e5c3deb3ad89f1261104a1ede2d75a75e))
 
 ## [0.1.1] - 2024-11-14
 
