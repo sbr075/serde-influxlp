@@ -272,6 +272,6 @@ pub(crate) mod value;
 pub use crate::{
     de::{from_reader, from_slice, from_str},
     error::{Error, ErrorCode},
-    ser::to_string,
+    ser::{to_string, to_vec, to_writer},
     value::{datatypes::Value, de::from_value, ser::to_value},
 };
