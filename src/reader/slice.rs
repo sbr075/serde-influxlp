@@ -45,9 +45,10 @@ impl<'de> Reader<'de> for SliceReader<'de> {
     }
 
     fn peek_char(&mut self) -> Result<u8> {
-        match self.position.column < self.input.len() {
+        let idx = self.position.column + self.position.previous_columns;
+        match idx < self.input.len() {
             true => {
-                let c = self.input[self.position.column];
+                let c = self.input[idx];
                 Ok(c)
             }
             false => Err(Error::unexpected_eof()),

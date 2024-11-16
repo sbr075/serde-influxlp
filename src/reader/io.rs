@@ -67,6 +67,7 @@ where
         match self.iter.next() {
             Some(c) => {
                 let c = c.map_err(|_| Error::unexpected_eof())?;
+                self.position.column += 1;
                 self.tmp = Some(c);
                 Ok(c)
             }

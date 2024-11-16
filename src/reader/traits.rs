@@ -13,6 +13,8 @@ pub(crate) trait Reader<'de> {
                 break;
             }
         }
+
+        self.set_next_line();
     }
 
     /// Skip until the next non ascii whitespace
