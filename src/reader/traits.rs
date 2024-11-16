@@ -125,8 +125,8 @@ pub(crate) trait Reader<'de> {
         let mut is_escaped = false;
         let mut in_quote = false;
         while let Ok(c) = self.peek_char() {
-            if (!is_escaped && !in_quote) && (c == COMMA || c == EQUALSIGN || c == WHITESPACE)
-                || c == NEWLINE
+            if (!is_escaped && !in_quote)
+                && (c == COMMA || c == EQUALSIGN || c.is_ascii_whitespace())
             {
                 break;
             }
@@ -161,7 +161,7 @@ pub(crate) trait Reader<'de> {
 
         while let Ok(c) = self.peek_char() {
             self.skip_char();
-            if c == WHITESPACE || c == NEWLINE {
+            if c.is_ascii_whitespace() {
                 break;
             }
 
@@ -200,7 +200,7 @@ pub(crate) trait Reader<'de> {
         let mut is_escaped = false;
 
         while let Ok(c) = self.peek_char() {
-            if (!is_escaped && !in_quote) && c == WHITESPACE {
+            if (!is_escaped && !in_quote) && c.is_ascii_whitespace() {
                 break;
             }
 
@@ -264,7 +264,7 @@ pub(crate) trait Reader<'de> {
                     self.skip_char();
                     Element::Fields
                 }
-                c => return Err(Error::unexpected_char(c, self.get_position())),
+                c => return Err(Error::unexpected_char(c as char, self.get_position())),
             },
 
             // After parsing tags, the parser either continues with additional tags or moves on to
@@ -283,7 +283,7 @@ pub(crate) trait Reader<'de> {
                     Element::Tags
                 }
                 WHITESPACE => Element::Fields,
-                c => return Err(Error::unexpected_char(c, self.get_position())),
+                c => return Err(Error::unexpected_char(c as char, self.get_position())),
             },
 
             // After parsing fields, the parser either continues with additional fields or moves on
@@ -301,14 +301,22 @@ pub(crate) trait Reader<'de> {
             // If no characters remain, the parser can safely proceed, as the next fields will reset
             // before new parsing starts.
             Element::Fields => match self.peek_char() {
-                Ok(c) => match c {
-                    COMMA | EQUALSIGN => {
-                        self.skip_char();
-                        Element::Fields
+                Ok(c) => {
+                    if c.is_ascii_whitespace() {
+                        Element::Timestamp
+                    } else {
+                        match c {
+                            COMMA | EQUALSIGN => {
+                                self.skip_char();
+                                Element::Fields
+                            }
+                            WHITESPACE => Element::Timestamp,
+                            c => {
+                                return Err(Error::unexpected_char(c as char, self.get_position()))
+                            }
+                        }
                     }
-                    WHITESPACE => Element::Timestamp,
-                    c => return Err(Error::unexpected_char(c, self.get_position())),
-                },
+                }
                 Err(_) => Element::Fields,
             },
             _ => Element::Timestamp,
@@ -348,26 +356,28 @@ pub(crate) trait Reader<'de> {
             // Field set is done whenever a whitespace, newline is reached, or if there are no more
             // characters remaining
             Element::Fields => match self.peek_char() {
-                Ok(c) => match c {
-                    WHITESPACE | NEWLINE => {
+                Ok(c) => {
+                    if c.is_ascii_whitespace() {
                         self.skip_char();
                         false
+                    } else {
+                        true
                     }
-                    _ => true,
-                },
+                }
                 Err(_) => false,
             },
 
             // Timestamp is done whenever a whitespace, newline is reached, or if there are no more
-            // characters remaining
+            // characters remaining. This might be an unneccessary check
             Element::Timestamp => match self.peek_char() {
-                Ok(c) => match c {
-                    WHITESPACE | NEWLINE => {
+                Ok(c) => {
+                    if c.is_ascii_whitespace() {
                         self.skip_char();
                         false
+                    } else {
+                        true
                     }
-                    _ => true,
-                },
+                }
                 Err(_) => false,
             },
         };
