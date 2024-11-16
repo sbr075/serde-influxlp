@@ -261,13 +261,13 @@
 //! remove, or edit its values before serializing again to change the line
 //! protocol.
 
+pub(crate) mod builder;
 pub(crate) mod datatypes;
 pub(crate) mod de;
 pub(crate) mod error;
 pub(crate) mod reader;
 pub(crate) mod ser;
 pub(crate) mod value;
-pub(crate) mod writer;
 
 pub use crate::{
     de::{from_reader, from_slice, from_str},

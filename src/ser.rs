@@ -1,54 +1,60 @@
-use std::str::FromStr;
+use std::{io, str::FromStr};
 
 use serde::{
     ser::{self, Impossible, SerializeMap, SerializeSeq, SerializeStruct, SerializeTuple},
     Serialize,
 };
 
-use crate::{datatypes::Element, writer::Writer, Value};
+use crate::{builder::Builder, datatypes::Element, Value};
 
 use super::error::{Error, Result};
 
 pub struct Serializer {
-    writer: Writer,
+    builder: Builder,
 
+    /// Current depth of the serialization
+    ///
+    /// Used to prevent map fields in tags / fields as they are not supported
     depth: usize,
 }
 
 impl Serializer {
-    fn from_writer(writer: Writer) -> Self {
-        Self { writer, depth: 0 }
+    fn new() -> Self {
+        Self {
+            builder: Builder::new(),
+            depth: 0,
+        }
     }
 
     fn output(&mut self) -> String {
-        self.writer.output()
+        self.builder.output()
     }
 
     fn build_line(&mut self) -> Result<()> {
-        self.writer.build_line()
+        self.builder.build_line()
     }
 
     fn set_element(&mut self, element: Element) {
-        self.writer.set_element(element);
+        self.builder.set_element(element);
     }
 
     fn add_key<T>(&mut self, key: T)
     where
         T: Into<Value>,
     {
-        self.writer.add_value(key)
+        self.builder.add_value(key)
     }
 
     fn add_value<T>(&mut self, value: T) -> Result<()>
     where
         T: Into<Value>,
     {
-        self.writer.add_value(value);
+        self.builder.add_value(value);
         Ok(())
     }
 
     fn remove_value(&mut self) -> Result<()> {
-        self.writer.remove_value();
+        self.builder.remove_value();
         Ok(())
     }
 }
@@ -486,6 +492,29 @@ impl<'a> SerializeStruct for TypeSerializer<'a> {
     }
 }
 
+pub fn to_writer<W, T>(mut writer: W, value: &T) -> Result<()>
+where
+    W: io::Write,
+    T: Serialize,
+{
+    let mut serializer = Serializer::new();
+    value.serialize(&mut serializer)?;
+
+    let output = serializer.output();
+    writer.write_all(output.as_bytes())?;
+
+    Ok(())
+}
+
+pub fn to_vec<T>(value: &T) -> Result<Vec<u8>>
+where
+    T: Serialize,
+{
+    let mut writer = Vec::new();
+    to_writer(&mut writer, value)?;
+    Ok(writer)
+}
+
 /// Serialize a valid data structure to a InfluxDB V2 Line protocol
 ///
 /// # Example
@@ -522,11 +551,10 @@ pub fn to_string<T>(value: &T) -> Result<String>
 where
     T: Serialize,
 {
-    let writer = Writer::new();
-    let mut serializer = Serializer::from_writer(writer);
-    value.serialize(&mut serializer)?;
+    let result = to_vec(value)?;
+    let string = unsafe { String::from_utf8_unchecked(result) };
 
-    Ok(serializer.output())
+    Ok(string)
 }
 
 #[cfg(test)]
@@ -569,7 +597,7 @@ mod test {
     }
 
     #[test]
-    fn test_serde_ser() {
+    fn test_ser_to_string() {
         let metric = Metric {
             metric: Measurement::Metric1,
             tags: Some(HashMap::new()),

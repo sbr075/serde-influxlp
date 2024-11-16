@@ -145,7 +145,7 @@ impl LineBuilder {
     }
 }
 
-pub(crate) struct Writer {
+pub(crate) struct Builder {
     builder: LineBuilder,
 
     lines: Vec<String>,
@@ -153,7 +153,7 @@ pub(crate) struct Writer {
     curr: Element,
 }
 
-impl Writer {
+impl Builder {
     pub fn new() -> Self {
         Self {
             builder: LineBuilder::default(),
