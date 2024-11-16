@@ -11,10 +11,15 @@ All notable changes to this project will be documented in this file.
 ### 🐛 Bug Fixes
 
 - Reported error position should be corrrect ([0950bc4](https://github.com/sbr075/serde-influxlp/commit/0950bc48ec63ec070d57404b6f3a24b1b9fcc1a9))
+- Check for ascii whitespace not only newline ([01062a1](https://github.com/sbr075/serde-influxlp/commit/01062a1dbcc11a53278773718ed9b782bad0c0a9))
 
 ### 🚜 Refactor
 
 - Move first read flag to seq deserializer ([aa46bc0](https://github.com/sbr075/serde-influxlp/commit/aa46bc0b2b0bff3e1d262a26fd1185ed5e76f722))
+
+### 📚 Documentation
+
+- Add comments for reader functions ([072aaa0](https://github.com/sbr075/serde-influxlp/commit/072aaa0f41c0542b7aadc22539c06c8dca1e1715))
 
 ## [0.1.1] - 2024-11-14
 
