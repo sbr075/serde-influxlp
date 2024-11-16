@@ -29,7 +29,7 @@ pub enum ErrorCode {
     },
 
     /// Failed to deserialize value as it is not recognized
-    InvalidValue,
+    InvalidValue(String),
 
     /// Field type was defined as char but value was not a valid char
     InvalidChar {
@@ -105,24 +105,22 @@ impl Display for Error {
                     self.position.column, self.position.line
                 )
             }
-            ErrorCode::InvalidValue => {
+            ErrorCode::InvalidValue(v) => {
                 format!(
-                    "invalid value at column {}, line {}",
+                    "invalid value `{v}` at column {}, line {}",
                     self.position.column, self.position.line
                 )
             }
             ErrorCode::InvalidChar { got: char, len } => {
                 format!(
                     "invalid char: `{char}` of length {len} at column {}, line {}",
-                    self.position.column - len,
-                    self.position.line
+                    self.position.column, self.position.line
                 )
             }
             ErrorCode::UnexpectedChar(v) => {
                 format!(
                     "unexpected char: `{v}` at column {}, line {}",
-                    self.position.column - 1,
-                    self.position.line
+                    self.position.column, self.position.line
                 )
             }
             ErrorCode::InfiniteFloat => "invalid float: floats must be finite".to_string(),
@@ -149,7 +147,7 @@ impl de::Error for Error {
     fn custom<T: fmt::Display>(msg: T) -> Error {
         Error {
             code: ErrorCode::Message(msg.to_string()),
-            position: Position { column: 0, line: 0 },
+            position: Position::new(),
         }
     }
 }
@@ -158,7 +156,7 @@ impl ser::Error for Error {
     fn custom<T: fmt::Display>(msg: T) -> Error {
         Error {
             code: ErrorCode::Message(msg.to_string()),
-            position: Position { column: 0, line: 0 },
+            position: Position::new(),
         }
     }
 }
@@ -174,25 +172,39 @@ impl Error {
     pub(crate) fn invalid_type(
         got: impl ToString,
         expected: impl ToString,
-        position: Position,
+        mut position: Position,
     ) -> Self {
+        // We've actually parsed to the end of this value so we adjust position to show
+        // it correctly in the error mesage
+        let got = got.to_string();
+        position.column -= got.len();
+
         Error {
             code: ErrorCode::InvalidType {
-                got: got.to_string(),
+                got: got,
                 expected: expected.to_string(),
             },
             position,
         }
     }
 
-    pub(crate) fn invalid_value(position: Position) -> Self {
+    pub(crate) fn invalid_value(value: impl ToString, mut position: Position) -> Self {
+        // We've actually parsed to the end of this value so we adjust position to show
+        // it correctly in the error mesage
+        let value = value.to_string();
+        position.column -= value.len();
+
         Error {
-            code: ErrorCode::InvalidValue,
+            code: ErrorCode::InvalidValue(value),
             position,
         }
     }
 
-    pub(crate) fn invalid_char(char: impl ToString, len: usize, position: Position) -> Self {
+    pub(crate) fn invalid_char(char: impl ToString, len: usize, mut position: Position) -> Self {
+        // We've actually parsed to the end of this value so we adjust position to show
+        // it correctly in the error mesage
+        position.column -= len;
+
         Error {
             code: ErrorCode::InvalidChar {
                 got: char.to_string(),
@@ -202,7 +214,11 @@ impl Error {
         }
     }
 
-    pub(crate) fn unexpected_char(char: impl ToString, position: Position) -> Self {
+    pub(crate) fn unexpected_char(char: impl ToString, mut position: Position) -> Self {
+        // We've actually parsed to the end of this value so we adjust position to show
+        // it correctly in the error mesage
+        position.column -= 1;
+
         Error {
             code: ErrorCode::UnexpectedChar(char.to_string()),
             position,

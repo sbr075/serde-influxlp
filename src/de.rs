@@ -70,7 +70,7 @@ macro_rules! deserialize_integer {
 
             // Check if element is a valid number
             let re = Regex::new(r"^-?\d+i?$").unwrap();
-            let value = match re.is_match(&value) {
+            let result = match re.is_match(&value) {
                 true => {
                     // Remove integer indicator
                     if value.ends_with("i") {
@@ -79,12 +79,12 @@ macro_rules! deserialize_integer {
 
                     value.parse()
                 }
-                false => return Err(Error::invalid_value(self.reader_position())),
+                false => return Err(Error::invalid_value(value, self.reader_position())),
             };
 
-            match value {
+            match result {
                 Ok(value) => visitor.$visit(value),
-                Err(_) => Err(Error::invalid_value(self.reader_position())),
+                Err(_) => Err(Error::invalid_value(value, self.reader_position())),
             }
         }
     };
@@ -97,12 +97,12 @@ impl<'de, R: Reader<'de>> de::Deserializer<'de> for &mut Deserializer<R> {
     where
         V: de::Visitor<'de>,
     {
-        let element = self.get_next_value()?;
-        let value = Value::from_any_str(&element).visit(visitor);
+        let value = self.get_next_value()?;
+        let result = Value::from_any_str(&value).visit(visitor);
 
-        match value {
+        match result {
             Ok(value) => Ok(value),
-            Err(_) => Err(Error::invalid_value(self.reader_position())),
+            Err(_) => Err(Error::invalid_value(value, self.reader_position())),
         }
     }
 
