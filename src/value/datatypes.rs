@@ -115,8 +115,9 @@ impl Number {
         match *self {
             Number::Float(v) => {
                 // Ensure `f64` fits within `i64` range
+                let v = v.round();
                 if v >= i64::MIN as f64 && v <= i64::MAX as f64 {
-                    Some(v.round() as i64)
+                    Some(v as i64)
                 } else {
                     None
                 }
@@ -146,8 +147,9 @@ impl Number {
         match *self {
             Number::Float(v) => {
                 // Ensure `f64` fits within `u64` range
+                let v = v.round();
                 if v >= u64::MIN as f64 && v <= u64::MAX as f64 {
-                    Some(v.round() as u64)
+                    Some(v as u64)
                 } else {
                     None
                 }
@@ -161,9 +163,16 @@ impl Number {
     /// inner values `to_string` function to convert self to a string.
     pub fn as_string(&self) -> String {
         match *self {
-            Number::Float(n) => n.to_string(),
-            Number::Integer(n) => n.to_string(),
-            Number::UInteger(n) => n.to_string(),
+            Number::Float(n) => {
+                // Use ryu if n is finite else use normal to_string conversion
+                if n.is_finite() {
+                    ryu::Buffer::new().format_finite(n).to_owned()
+                } else {
+                    n.to_string()
+                }
+            }
+            Number::Integer(n) => itoa::Buffer::new().format(n).to_owned(),
+            Number::UInteger(n) => itoa::Buffer::new().format(n).to_owned(),
         }
     }
 }
