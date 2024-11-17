@@ -71,7 +71,7 @@ impl Number {
         }
     }
 
-    /// Checks if ç is a float
+    /// Checks if number is a float
     pub fn is_float(&self) -> bool {
         matches!(self, Number::Float(_))
     }
