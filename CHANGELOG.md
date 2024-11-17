@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [unreleased]
+
+### 🚀 Features
+
+- Use ryu and itoa for conversion in number ([ab50379](https://github.com/sbr075/serde-influxlp/commit/ab50379fc46566fbc157fdddc45217298a5718f1))
+
+### 🐛 Bug Fixes
+
+- Spelling mistake in doc comment ([a1aada0](https://github.com/sbr075/serde-influxlp/commit/a1aada00f360f88628304ea5e15e8585c4b80e98))
+
 ## [0.1.2] - 2024-11-16
 
 ### 🚀 Features
