@@ -279,8 +279,8 @@ impl Display for Value {
         let value = match self {
             Value::None => format!(""),
             Value::Number(n) => n.to_string(),
-            Value::String(s) => format!("{s}"),
-            Value::Boolean(b) => format!("{b}"),
+            Value::String(s) => s.to_string(),
+            Value::Boolean(b) => b.to_string(),
         };
 
         write!(f, "{}", value)
