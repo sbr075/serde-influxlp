@@ -51,9 +51,9 @@ impl LineBuilder {
     fn escape_key(&self, value: &Value) -> String {
         match value {
             Value::String(s) => s
-                .replace(r"\=", "=")
-                .replace(r"\,", ",")
-                .replace(r"\ ", " "),
+                .replace("=", r"\=")
+                .replace(",", r"\,")
+                .replace(" ", r"\ "),
             _ => value.as_string(),
         }
     }
@@ -61,9 +61,9 @@ impl LineBuilder {
     fn escape_tag(&self, value: &Value) -> String {
         match value {
             Value::String(s) => s
-                .replace(r"\=", "=")
-                .replace(r"\,", ",")
-                .replace(r"\ ", " "),
+                .replace("=", r"\=")
+                .replace(",", r"\,")
+                .replace(" ", r"\ "),
             _ => value.to_string(),
         }
     }
