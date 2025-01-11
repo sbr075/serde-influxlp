@@ -11,6 +11,11 @@ All notable changes to this project will be documented in this file.
 ### 🐛 Bug Fixes
 
 - Spelling mistake in doc comment ([a1aada0](https://github.com/sbr075/serde-influxlp/commit/a1aada00f360f88628304ea5e15e8585c4b80e98))
+- Switch escape as it was the wrong way ([6fd9ae1](https://github.com/sbr075/serde-influxlp/commit/6fd9ae12ede558edeec4151c357c9fd0cc30710b))
+
+### 🧹 Routine Tasks
+
+- Update version number ([8a8b148](https://github.com/sbr075/serde-influxlp/commit/8a8b1488ecf7385de6c77029ed6f6530421ebe31))
 
 ## [0.1.2] - 2024-11-16
 
