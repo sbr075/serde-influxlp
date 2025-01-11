@@ -35,8 +35,8 @@ measurement,tag1=val1,tag2=val2 field1="val1",field2=true 1729270461612452700
 Add these two crates to your `Cargo.toml`
 ```toml
 [dependencies]
-serde = "1.0.215"
-serde_influxlp = "0.1.1"
+serde = "1.0.214"
+serde_influxlp = "0.1.3"
 ```
 
 ### Limitations
