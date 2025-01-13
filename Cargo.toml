@@ -1,6 +1,6 @@
 [package]
 name = "serde_influxlp"
-version = "0.1.3"
+version = "0.1.4"
 description = "A Rust crate implementing Serde support for parsing and serializing InfluxDB v2 line protocol."
 edition = "2021"
 homepage = "https://github.com/sbr075/serde-influxlp"
