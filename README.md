@@ -36,7 +36,7 @@ Add these two crates to your `Cargo.toml`
 ```toml
 [dependencies]
 serde = "1.0.214"
-serde_influxlp = "0.1.3"
+serde_influxlp = "0.1.4"
 ```
 
 ### Limitations
