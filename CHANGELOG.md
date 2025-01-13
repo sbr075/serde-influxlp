@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [unreleased]
+
+### 🚀 Features
+
+- Make number enum public ([7b73c6c](https://github.com/sbr075/serde-influxlp/commit/7b73c6c1f38d090ab6fa86775996b26c2006e6e6))
+
+### 🧹 Routine Tasks
+
+- Update version to 0.1.4 ([5c57224](https://github.com/sbr075/serde-influxlp/commit/5c572244460d79164886bc5c061dd963cb311d8a))
+
 ## [0.1.3] - 2025-01-11
 
 ### 🚀 Features
