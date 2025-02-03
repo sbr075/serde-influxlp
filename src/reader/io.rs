@@ -100,10 +100,7 @@ where
             return false;
         }
 
-        match self.peek_char() {
-            Ok(_) => true,
-            Err(_) => false,
-        }
+        self.peek_char().is_ok()
     }
 
     fn set_next_line(&mut self) {

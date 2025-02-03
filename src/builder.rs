@@ -99,7 +99,7 @@ impl LineBuilder {
             let tags: Vec<String> = tag_set
                 .into_iter()
                 .map(|t| {
-                    let key = self.escape_key(t.get(0).unwrap());
+                    let key = self.escape_key(t.first().unwrap());
                     let value = self.escape_tag(t.get(1).unwrap());
 
                     format!("{key}={value}")
@@ -124,7 +124,7 @@ impl LineBuilder {
                 let fields: Vec<String> = field_set
                     .into_iter()
                     .map(|f| {
-                        let key = self.escape_key(f.get(0).unwrap());
+                        let key = self.escape_key(f.first().unwrap());
                         let value = self.escape_field_value(f.get(1).unwrap());
 
                         format!("{key}={value}")
