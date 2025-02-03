@@ -126,7 +126,7 @@ impl Display for Error {
                 )
             }
             ErrorCode::InfiniteFloat => "invalid float: floats must be finite".to_string(),
-            ErrorCode::InvalidKey => format!("invalid key: keys must be of type string"),
+            ErrorCode::InvalidKey => "invalid key: keys must be of type string".to_string(),
             ErrorCode::InvalidFieldType(v) => format!(
                 "invalid field type `{v}`, expected any of: float, int, uint, string, or bool"
             ),
@@ -198,7 +198,7 @@ impl Error {
 
         Error {
             code: ErrorCode::InvalidType {
-                got: got,
+                got,
                 expected: expected.to_string(),
             },
             position,

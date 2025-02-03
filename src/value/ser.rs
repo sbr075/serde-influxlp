@@ -35,7 +35,7 @@ impl Serialize for Value {
 
 pub struct Serializer;
 
-impl<'de> ser::Serializer for Serializer {
+impl ser::Serializer for Serializer {
     type Ok = Value;
     type Error = Error;
 
@@ -128,7 +128,7 @@ impl<'de> ser::Serializer for Serializer {
         _variant_index: u32,
         variant: &'static str,
     ) -> Result<Self::Ok, Self::Error> {
-        self.serialize_str(&variant)
+        self.serialize_str(variant)
     }
 
     fn serialize_newtype_struct<T>(

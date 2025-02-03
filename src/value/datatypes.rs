@@ -253,8 +253,8 @@ impl Value {
         };
 
         let value = match char.to_ascii_lowercase() {
-            '-' | '0'..='9' => Value::from_number_str(&s),
-            't' | 'f' => Value::from_bool_str(&s),
+            '-' | '0'..='9' => Value::from_number_str(s),
+            't' | 'f' => Value::from_bool_str(s),
             _ => None,
         };
 
@@ -277,7 +277,7 @@ impl Value {
 impl Display for Value {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let value = match self {
-            Value::None => format!(""),
+            Value::None => String::new(),
             Value::Number(n) => n.to_string(),
             Value::String(s) => s.to_string(),
             Value::Boolean(b) => b.to_string(),
@@ -380,7 +380,7 @@ impl From<bool> for Value {
 impl Value {
     /// Converts this type into a shared reference of itself
     pub fn as_ref(&self) -> &Self {
-        &self
+        self
     }
 
     /// Returns a mutable version of itself
@@ -545,11 +545,11 @@ impl Value {
             Value::Number(n) => match n.as_int() {
                 Some(n) => {
                     if n == 0 {
-                        return Some(false);
+                        Some(false)
                     } else if n == 1 {
-                        return Some(true);
+                        Some(true)
                     } else {
-                        return None;
+                        None
                     }
                 }
                 None => None,
