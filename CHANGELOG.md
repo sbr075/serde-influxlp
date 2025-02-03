@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [unreleased]
+
+### 🚀 Features
+
+- *(value)* Add converting string and number to bool ([b77d4b8](https://github.com/sbr075/serde-influxlp/commit/b77d4b80029d75c69032222708feba72120892c5))
+
+### 🚜 Refactor
+
+- Adhere to (some of) clippy guidelines ([c53ffc0](https://github.com/sbr075/serde-influxlp/commit/c53ffc06aa566e30a8df88c357bc78512469fc8a))
+
+### 🧹 Routine Tasks
+
+- Bump version number up to 0.1.5 ([091f0b7](https://github.com/sbr075/serde-influxlp/commit/091f0b70bd7a57b0239694b863bb44bfec1ae5b5))
+
 ## [0.1.4] - 2025-01-13
 
 ### 🚀 Features
