@@ -522,9 +522,14 @@ impl Value {
         matches!(self, Value::Boolean(_))
     }
 
-    /// Attempts to convert the inner value of self into a boolean. Only a
-    /// boolean can be converted into a boolean so using this function when
-    /// Value is any other value will only return a None
+    /// Attempts to convert the inner value of self into a boolean.
+    ///
+    /// Rules:
+    /// 1. A boolean will return its inner boolean
+    /// 2. A string can be parsed into a boolean but it has to either be `true`
+    ///    or `false`
+    /// 3. A number can be converted into a boolean but it has to either be `1`
+    ///    for true or `0` for false
     ///
     /// # Example
     ///
@@ -536,6 +541,19 @@ impl Value {
     /// ```
     pub fn as_bool(&self) -> Option<bool> {
         match self {
+            Value::String(s) => s.parse::<bool>().ok(),
+            Value::Number(n) => match n.as_int() {
+                Some(n) => {
+                    if n == 0 {
+                        return Some(false);
+                    } else if n == 1 {
+                        return Some(true);
+                    } else {
+                        return None;
+                    }
+                }
+                None => None,
+            },
             Value::Boolean(b) => Some(*b),
             _ => None,
         }
